@@ -1,15 +1,92 @@
-<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
     <link rel="stylesheet" type="text/css" href="https://cdn.mxpnl.com/libs/mixpanel-platform/css/reset.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.mxpnl.com/libs/mixpanel-platform/build/mixpanel-platform.v0.latest.min.css">
     <script src="https://cdn.mxpnl.com/libs/mixpanel-platform/build/mixpanel-platform.v0.latest.min.js"></script>
+    <script src="sorttable.js"></script>
+    <!-- start Mixpanel --><script type="text/javascript">(function(e,b){if(!b.__SV){var a,f,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=e.createElement("script");a.type="text/javascript";a.async=!0;a.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";f=e.getElementsByTagName("script")[0];f.parentNode.insertBefore(a,f)}})(document,window.mixpanel||[]);
+mixpanel.init('e23eb41d25290b521d370b2d8d27c395');</script><!-- end Mixpanel -->
   </head>
   <body class="mixpanel-platform-body">
-    <h1>Hello, World!</h1>
+  	<script id='query'>
+var params = {
+  to_date: new Date().toISOString().slice(0,-14),
+  from_date: new Date(_.now() - 1000*60*60*24).toISOString().slice(0,-14)
+};
+
+function main() {
+  return join(Events(params), People({}))
+  .filter(item => item.user && item.event)
+  .groupByUser(function(state, items) {
+    state = state || 0;
+    _.each(items, function(item) {
+      state = state + 1 || 1;
+    });
+    return state;
+  })
+  .reduce(mixpanel.reducer.top(20))
+  .map(function(item) {
+    var res = [];
+    _.each(item, function(person) {
+      res.push({
+        distinct_id: person.key[0],
+        num_events: person.value
+      });
+    });
+    return res;
+  });
+}
+  	</script>
     <script>
-      // Run queries and display results here
+    	function createMixpaneler(first_name, last_name, gender) {
+    		return {
+    			$first_name: first_name,
+    			$last_name: last_name,
+    			$email: first_name.replace(/\s/g, '').toLowerCase() + '.' + last_name.replace(/\s/g, '').toLowerCase() + '@mixpanel.com',
+    			Gender: gender,
+    			$city: 'San Francisco',
+    			$country_code: 'US',
+    			$region: 'California'
+    		};
+    	}
+    	var mixpanelers = [
+    		createMixpaneler('Evan', 'Moss', 'Male'),
+    		createMixpaneler('Nolan', 'Mattox', 'Male'),
+    		createMixpaneler('Alex', 'Bensick', 'Male'),
+    		createMixpaneler('Aaron', 'Krivitzky', 'Male'),
+    		createMixpaneler('Beckie', 'Yanovsky', 'Female'),
+    		createMixpaneler('Ricky', 'Doar', 'Male'),
+    		createMixpaneler('Stephen', 'Moock', 'Male'),
+    		createMixpaneler('Dan', 'McKnight', 'Male'),
+    		createMixpaneler('Orien', 'Wu', 'Male'),
+    		createMixpaneler('Jeff', 'Witte', 'Male'),
+    		createMixpaneler('Diggory', 'Rycroft', 'Male'),
+    		createMixpaneler('Bo', 'Beyer Johnson', 'Male'),
+    		createMixpaneler('Emmett', 'Faricy', 'Male'),
+    		createMixpaneler('Laura', 'Del Beccaro', 'Female'),
+    		createMixpaneler('Ron', 'Grier', 'Male'),
+    		createMixpaneler('Jesse', 'Dailey', 'Male'),
+    		createMixpaneler('Stephen', 'Morse', 'Male')
+    	];
+		var script = document.getElementById('query').innerHTML;
+		var params = {
+		  to_date: new Date().toISOString().slice(0,-14),
+		  from_date: new Date(_.now() - 1000*60*60*24).toISOString().slice(0,-14),
+		  num_users: mixpanelers.length
+		};
+		function runQuery() {
+      		MP.api.jql(script, {}).done(function(results) {
+      			var distinct_ids = _.pluck(results[0], 'distinct_id')
+      			console.log(distinct_ids);
+      			_.each(distinct_ids, function(distinct_id, i) {
+      				mixpanel.identify(distinct_id);
+      				mixpanel.people.set(mixpanelers[i]);
+      			});
+      		})
+		}
+		runQuery();
     </script>
   </body>
 </html>
